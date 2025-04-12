@@ -290,18 +290,9 @@ class CalendarManager:
             access_granted = granted
             semaphore.release()
 
-        # Get macOS version
-        mac_version = tuple(map(int, platform.mac_ver()[0].split('.')[:2]))
-        logger.debug(f"macOS version detected: {mac_version}")
-        
-        # Use requestFullAccessToEvents for macOS 14.0+ (Sequoia/15.0+)
-        # Note: The method name is fixed here - removed the trailing underscore
-        if mac_version >= (14, 0):
-            logger.info("Using requestFullAccessToEvents for macOS 14.0+")
-            self.event_store.requestFullAccessToEvents(completion)
-        else:
-            logger.info("Using requestAccessToEntityType_completion_ for older macOS versions")
-            self.event_store.requestAccessToEntityType_completion_(EKEntityTypeEvent, completion)
+        # Use the standard method that works on all macOS versions
+        logger.info("Requesting calendar access using requestAccessToEntityType_completion_")
+        self.event_store.requestAccessToEntityType_completion_(EKEntityTypeEvent, completion)
             
         semaphore.acquire()
         return access_granted
