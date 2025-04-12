@@ -1,4 +1,5 @@
 import sys
+import platform
 from datetime import datetime
 from threading import Semaphore
 from typing import Any
@@ -39,9 +40,14 @@ class CalendarManager:
         # Always request access regardless of current status
         if not self._request_access():
             logger.error("Calendar access request failed")
-            raise ValueError(
-                "Calendar access not granted. Please check System Settings > Privacy & Security > Calendar."
-            )
+            mac_version = tuple(map(int, platform.mac_ver()[0].split('.')[:2]))
+            
+            if mac_version >= (14, 0):
+                error_msg = "Full calendar access not granted. Please check System Settings > Privacy & Security > Calendar and ensure 'Full Access' is selected for this application."
+            else:
+                error_msg = "Calendar access not granted. Please check System Settings > Privacy & Security > Calendar."
+                
+            raise ValueError(error_msg)
         logger.info("Calendar access granted successfully")
 
     def list_events(
@@ -284,7 +290,18 @@ class CalendarManager:
             access_granted = granted
             semaphore.release()
 
-        self.event_store.requestAccessToEntityType_completion_(0, completion)
+        # Get macOS version
+        mac_version = tuple(map(int, platform.mac_ver()[0].split('.')[:2]))
+        logger.debug(f"macOS version detected: {mac_version}")
+        
+        # Use requestFullAccessToEvents_ for macOS 14.0+ (Sequoia/15.0+)
+        if mac_version >= (14, 0):
+            logger.info("Using requestFullAccessToEvents_ for macOS 14.0+")
+            self.event_store.requestFullAccessToEvents_(completion)
+        else:
+            logger.info("Using requestAccessToEntityType_completion_ for older macOS versions")
+            self.event_store.requestAccessToEntityType_completion_(EKEntityTypeEvent, completion)
+            
         semaphore.acquire()
         return access_granted
 

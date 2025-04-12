@@ -1,4 +1,5 @@
 import sys
+import platform
 from datetime import datetime
 from functools import lru_cache
 from textwrap import dedent
@@ -27,16 +28,31 @@ def get_calendar_manager() -> CalendarManager:
     try:
         return CalendarManager()
     except ValueError as e:
-        error_msg = dedent("""\
-        Calendar access is not granted. Please follow these steps:
+        mac_version = tuple(map(int, platform.mac_ver()[0].split('.')[:2]))
+        
+        if mac_version >= (14, 0):
+            error_msg = dedent("""\
+            Calendar access is not granted. Please follow these steps:
 
-        1. Open System Preferences/Settings
-        2. Go to Privacy & Security > Calendar
-        3. Check the box next to your terminal application or Claude Desktop
-        4. Restart Claude Desktop
+            1. Open System Preferences/Settings
+            2. Go to Privacy & Security > Calendar
+            3. Check the box next to your terminal application or Claude Desktop
+            4. Ensure the access level is set to 'Full Access'
+            5. Restart Claude Desktop
 
-        Once you've granted access, try your calendar operation again.
-        """)
+            Once you've granted access, try your calendar operation again.
+            """)
+        else:
+            error_msg = dedent("""\
+            Calendar access is not granted. Please follow these steps:
+
+            1. Open System Preferences/Settings
+            2. Go to Privacy & Security > Calendar
+            3. Check the box next to your terminal application or Claude Desktop
+            4. Restart Claude Desktop
+
+            Once you've granted access, try your calendar operation again.
+            """)
         raise ValueError(error_msg) from e
 
 
